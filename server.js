@@ -1,6 +1,10 @@
 const express = require("express");
 const { Client } = require("pg");
 const cors = require("cors");
+const mqtt = require("mqtt");
+const bodyParser = require("body-parser");
+
+const client = mqtt.connect("mqtt://13.38.173.241");
 
 const pgClient = new Client({
   connectionString: "postgresql://postgres:root@localhost/fleet_management",
@@ -9,7 +13,7 @@ const pgClient = new Client({
 pgClient.connect();
 
 const corsOptions = {
-  origin: "*", // replace with your application's origin or an array of allowed origins
+  origin: "*",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 204,
@@ -18,6 +22,7 @@ const corsOptions = {
 const app = express();
 
 app.use(cors(corsOptions));
+app.use(bodyParser.json());
 
 app.get("/uav-data", async (req, res) => {
   const uavId = req.query.uavId;
@@ -60,6 +65,74 @@ app.get("/uav-list", async (req, res) => {
 async function getUavList() {
   const queryText = "SELECT * FROM uav";
   return await pgClient.query(queryText);
+}
+
+let uavs = [];
+const getUavs = async () => {
+  uavs = await getUavList();
+  uavs = await uavs.rows;
+};
+getUavs();
+
+app.post("/uav-create", async (req, res) => {
+  const { uav_id } = req.body;
+
+  if (!uav_id) {
+    res.status(400).send("Missing required query parameters: uavId");
+    return;
+  }
+
+  const text = `
+      INSERT INTO uav(uav_id, state) 
+      VALUES($1, $2)
+    `;
+
+  const values = [uav_id, uavs.find((value) => "uav1" === value.uav_id)?.state];
+
+  try {
+    await pgClient.query(text, values);
+  } catch (e) {
+    console.error(e.stack);
+  }
+
+  publishRecursively(uav_id, values[1]);
+
+  const dronePosition = {
+    lon: (Math.random() * 2 - 1) * 180,
+    lat: (Math.random() * 2 - 1) * 90,
+    abs: Math.random() * 180,
+  };
+
+  const getRandomWalkStep = () => Math.random() * 0.0001 - 0.00005;
+  const getRandomAltitudeStep = () => Math.random() * 2 - 1;
+
+  const updatePosition = () => {
+    dronePosition.lat += getRandomWalkStep();
+    dronePosition.lon += getRandomWalkStep();
+    dronePosition.abs += getRandomAltitudeStep();
+    dronePosition.fx = 3;
+    dronePosition.ns = 10;
+  };
+
+  setInterval(() => {
+    updatePosition(dronePosition);
+    for (let key of Object.keys(dronePosition)) {
+      client.publish(`${uav_id}/gps/${key}`, String(dronePosition[key]));
+    }
+  }, Math.random() * 1000);
+
+  res.sendStatus(201);
+});
+
+function publishRecursively(prefix, obj) {
+  for (let key of Object.keys(obj)) {
+    const newPrefix = `${prefix}/${key}`;
+    if (obj[key] !== null && typeof obj[key] === "object") {
+      publishRecursively(newPrefix, obj[key]);
+    } else {
+      client.publish(newPrefix, String(obj[key]));
+    }
+  }
 }
 
 const PORT = process.env.PORT || 3001;
