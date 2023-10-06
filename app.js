@@ -60,9 +60,9 @@ client.on("message", async function (topic, message) {
     const { gps, ...info } = uavs[uavId];
     const stateJson = JSON.stringify(info);
     const text = `
-      INSERT INTO uav(uav_id, state) 
+      INSERT INTO uav(uav_id, state)
       VALUES($1, $2)
-      ON CONFLICT (uav_id) 
+      ON CONFLICT (uav_id)
       DO UPDATE SET state = EXCLUDED.state;
     `;
     const values = [uavId, stateJson];
