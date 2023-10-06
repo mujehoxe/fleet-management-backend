@@ -51,6 +51,17 @@ app.get("/uav-data", async (req, res) => {
   }
 });
 
+app.get("/uav-list", async (req, res) => {
+  const result = await getUavList();
+
+  res.json(result.rows);
+});
+
+async function getUavList() {
+  const queryText = "SELECT * FROM uav";
+  return await pgClient.query(queryText);
+}
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
