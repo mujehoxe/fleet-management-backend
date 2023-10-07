@@ -1,5 +1,5 @@
 # Fleet Management
-This repo includes two nodejs scripts, 'dataPersister.js' which is responsible for storing history, and 'server.js' for providing this data.
+This repo includes two nodejs scripts, 'dataPersister.js' which is responsible for storing history, and 'server.js' for providing it to clients.
 # Usage
 Open a terminal
 ```
