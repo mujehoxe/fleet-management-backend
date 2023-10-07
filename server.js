@@ -74,6 +74,8 @@ const getUavs = async () => {
 };
 getUavs();
 
+const getRandomAltitudeStep = () => Math.random() * 2 - 1;
+
 app.post("/uav-create", async (req, res) => {
   const { uav_id } = req.body;
 
@@ -101,14 +103,21 @@ app.post("/uav-create", async (req, res) => {
     lon: (Math.random() * 2 - 1) * 180,
     lat: (Math.random() * 2 - 1) * 90,
     abs: Math.random() * 180,
+    angle: 0,
   };
 
-  const getRandomWalkStep = () => Math.random() * 0.0001 - 0.00005;
-  const getRandomAltitudeStep = () => Math.random() * 2 - 1;
+  const circleRadius = 0.001;
+  const angleStep = (2 * Math.PI) / 360;
 
   const updatePosition = () => {
-    dronePosition.lat += getRandomWalkStep();
-    dronePosition.lon += getRandomWalkStep();
+    dronePosition.angle += angleStep;
+    if (dronePosition.angle >= 2 * Math.PI) {
+      dronePosition.angle -= 2 * Math.PI;
+    }
+
+    dronePosition.lat += circleRadius * Math.sin(dronePosition.angle);
+    dronePosition.lon += circleRadius * Math.cos(dronePosition.angle);
+
     dronePosition.abs += getRandomAltitudeStep();
     dronePosition.fx = 3;
     dronePosition.ns = 10;
@@ -119,7 +128,7 @@ app.post("/uav-create", async (req, res) => {
     for (let key of Object.keys(dronePosition)) {
       client.publish(`${uav_id}/gps/${key}`, String(dronePosition[key]));
     }
-  }, Math.random() * 1000);
+  }, Math.random() * 30000);
 
   res.sendStatus(201);
 });
