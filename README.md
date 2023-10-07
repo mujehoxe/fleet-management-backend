@@ -3,7 +3,7 @@ This repo includes two nodejs scripts, 'dataPersister.js' which is responsible f
 
 # Architecture
 
-![Screenshot from 2023-10-07 06-21-271](https://github.com/taha-saifi/fleet-management/assets/52047683/3211853a-620e-41a6-9933-f16208f6ce67)
+![Screenshot from 2023-10-07 06-21-271](https://github.com/taha-saifi/fleet-management/assets/52047683/49f7f3b5-b6e5-4f4a-b31f-af272039a223)
 
 # Usage
 Open a terminal
